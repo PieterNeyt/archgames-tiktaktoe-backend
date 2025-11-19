@@ -1,8 +1,7 @@
 package be.kdg.ip3.tttbackend.domain;
 
-public enum Status {
+public enum GameStatus {
     IN_PROGRESS,
-    X_WON,
-    O_WON,
+    FINISHED,
     DRAW
 }

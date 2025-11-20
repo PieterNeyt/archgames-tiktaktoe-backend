@@ -1,7 +1,10 @@
 package be.kdg.ip3.tttbackend.domain;
 
+import lombok.Getter;
+
 import java.util.Objects;
 
+@Getter
 public class Game {
     private final GameId gameId;
     private final Board board;

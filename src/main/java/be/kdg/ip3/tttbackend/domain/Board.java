@@ -1,6 +1,7 @@
 package be.kdg.ip3.tttbackend.domain;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class Board {
     public static final int SIZE = 3;
@@ -61,4 +62,28 @@ public class Board {
             throw new IllegalArgumentException("Coordinates Out of bounds");
         }
     }
+
+    public List<List<String>> toMatrix() {
+
+        return Arrays.stream(board)
+                .map(row -> Arrays.stream(row)
+                        .map(PlayerMark::toSymbol)
+                        .toList())
+                .toList();
+    }
+
+
+        public static Board fromMatrix(List<List<String>> matrix) {
+        PlayerMark[][] grid = new PlayerMark[SIZE][SIZE];
+
+        for (int row = 0; row < SIZE; row++) {
+            for (int col = 0; col < SIZE; col++) {
+                String symbol = matrix.get(row).get(col);
+                grid[row][col] = PlayerMark.fromSymbol(symbol);
+            }
+        }
+
+        return new Board(grid);
+    }
+
 }

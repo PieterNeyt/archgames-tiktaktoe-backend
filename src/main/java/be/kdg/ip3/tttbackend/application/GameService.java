@@ -72,7 +72,6 @@ public class GameService {
             int aiRow = aiResponse.get("row");
             int aiCol = aiResponse.get("col");
 
-            // 3️⃣ Apply AI move
             Game finalUpdatedGame = updatedGame.playMove(aiRow, aiCol);
             games.save(finalUpdatedGame);
             return finalUpdatedGame;

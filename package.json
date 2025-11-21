@@ -1,0 +1,17 @@
+{
+  "name": "ttt-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.com:kdg-ti/integratieproject-j3/teams-25-26/team15/games/tik-tak-toe/ttt-backend.git"
+  },
+  "private": true,
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

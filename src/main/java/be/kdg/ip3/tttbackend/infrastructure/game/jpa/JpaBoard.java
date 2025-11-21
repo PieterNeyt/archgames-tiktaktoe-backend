@@ -1,15 +1,13 @@
 package be.kdg.ip3.tttbackend.infrastructure.game.jpa;
 
 import be.kdg.ip3.tttbackend.domain.Board;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
+import org.hibernate.annotations.Type;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import java.io.IOException;
 import java.util.List;
 
 @Embeddable
@@ -17,6 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 public class JpaBoard {
 
+    @Type(JsonType.class)
     @Column(name = "board_json", columnDefinition = "jsonb")
     private String boardJson;
 
@@ -25,17 +24,18 @@ public class JpaBoard {
     public JpaBoard(Board board) {
         try {
             this.boardJson = mapper.writeValueAsString(board.toMatrix());
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize board", e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     public Board toDomain() {
         try {
-            List<List<String>> matrix = mapper.readValue(boardJson, List.class);
+            List<List<String>> matrix =
+                    mapper.readValue(boardJson, List.class);
             return Board.fromMatrix(matrix);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to deserialize board", e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

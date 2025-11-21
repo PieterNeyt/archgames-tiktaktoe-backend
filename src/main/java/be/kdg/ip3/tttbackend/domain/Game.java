@@ -33,6 +33,10 @@ public class Game {
         );
     }
 
+    public boolean isFinished() {
+        return gameStatus != GameStatus.IN_PROGRESS;
+    }
+
     public static Game newHvAIGame(PlayerMark aiPlayer, PlayerMark humanPlayer) {
         Objects.requireNonNull(aiPlayer);
         Objects.requireNonNull(humanPlayer);

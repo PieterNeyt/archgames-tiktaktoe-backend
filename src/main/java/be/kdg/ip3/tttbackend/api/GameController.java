@@ -24,7 +24,7 @@ public class GameController {
     }
 
     @PostMapping
-    public ResponseEntity<GameDto> createGame(@Valid @RequestBody GameDto gameDto) {
+    public ResponseEntity<GameDto> createGame() {
         Game game = gameService.createNewGame();
 
         var location = URI.create("/api/games/" + game.getGameId().id());
@@ -33,10 +33,8 @@ public class GameController {
     }
 
     @PostMapping("/ai")
-    public ResponseEntity<GameDto> createGameWithAi(@Valid @RequestBody GameDto gameDto) {
-        Game game = gameService.createNewGameWithAi(
-                gameDto.currentPlayer() != null ? Enum.valueOf(PlayerMark.class, gameDto.currentPlayer()) : null,
-                gameDto.aiPlayer() != null ? Enum.valueOf(PlayerMark.class, gameDto.aiPlayer()) : null);
+    public ResponseEntity<GameDto> createGameWithAi(@RequestParam PlayerMark human, @RequestParam PlayerMark ai) {
+        Game game = gameService.createNewGameWithAi(human, ai);
 
         var location = URI.create("/api/games/" + game.getGameId().id());
         return ResponseEntity.created(location).body(GameDto.FromDomain(game));

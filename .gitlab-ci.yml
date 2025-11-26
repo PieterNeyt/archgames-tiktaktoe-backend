@@ -47,25 +47,37 @@ test:
 # --------------------------------------------
 package:
   stage: package
-  image: docker:27-dind
+
+  image: docker:27-cli
   services:
     - docker:27-dind
+
   variables:
     DOCKER_HOST: "tcp://docker:2375"
     DOCKER_TLS_CERTDIR: ""
+
   before_script:
-    - apk add openjdk17
+    # Install JDK 23 (required by Gradle toolchain)
+    - apk add --no-cache openjdk23
     - java -version
-    - ./gradlew --version
+
   script:
     - DATE=$(date +%Y%m%d)
     - VERSION="$MAJOR.$MINOR.$DATE-$CI_PIPELINE_ID"
     - IMAGE="$CI_REGISTRY_IMAGE"
+
     - echo "Building version $VERSION"
+
     - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+
+    # Build the Spring Boot OCI image
     - ./gradlew bootBuildImage --imageName=$IMAGE:$VERSION
+
+    # Tag & push
     - docker tag $IMAGE:$VERSION $IMAGE:latest
     - docker push $IMAGE:$VERSION
     - docker push $IMAGE:latest
+
   rules:
     - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE != "merge_request_event"
+

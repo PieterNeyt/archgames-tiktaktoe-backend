@@ -47,7 +47,7 @@ test:
 # --------------------------------------------
 package:
   stage: package
-  image: eclipse-temurin:25-jdk-alpine
+  image: registry.gitlab.com/kdg-ti/integratieproject-j3/teams-25-26/team15/archportal/archportalbackend/java-docker:latest
   services:
     - docker:27-dind
   variables:

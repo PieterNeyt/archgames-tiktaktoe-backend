@@ -6,5 +6,5 @@ public record SessionInfo(
         UUID sessionId,
         UUID gameLobbyId,
         UUID playerId,
-        String gameId
+        UUID gameId
 ) {}

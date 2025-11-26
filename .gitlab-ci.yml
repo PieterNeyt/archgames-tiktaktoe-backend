@@ -47,14 +47,12 @@ test:
 # --------------------------------------------
 package:
   stage: package
-  image: $DEFAULT_IMAGE
+  image: registry.gitlab.com/kdg-ti/integratieproject-j3/teams-25-26/team15/games/tik-tak-toe/ttt-backend/java-docker:latest
   services:
     - docker:27-dind
   variables:
     DOCKER_HOST: "tcp://docker:2375"
     DOCKER_TLS_CERTDIR: ""
-  before_script:
-    - apk add --no-cache docker-cli
   script:
     - DATE=$(date +%Y%m%d)
     - VERSION="$MAJOR.$MINOR.$DATE-$CI_PIPELINE_ID"

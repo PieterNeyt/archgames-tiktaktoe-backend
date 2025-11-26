@@ -4,7 +4,7 @@ stages:
   - package
 
 variables:
-  DEFAULT_IMAGE: eclipse-temurin:23-jdk-alpine
+  DEFAULT_IMAGE: eclipse-temurin:25-jdk-alpine
   MAJOR: "1"
   MINOR: "0"
 

@@ -1,0 +1,67 @@
+stages:
+  - compile
+  - test
+  - package
+
+variables:
+  DEFAULT_IMAGE: eclipse-temurin:25-jdk-alpine
+  MAJOR: "1"
+  MINOR: "0"
+
+# --------------------------------------------
+# Compile Stage
+# --------------------------------------------
+compile:
+  stage: compile
+  image: $DEFAULT_IMAGE
+  script:
+    - ./gradlew compileJava
+    - ./gradlew compileTestJava
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
+
+# --------------------------------------------
+# Test Stage
+# --------------------------------------------
+test:
+  stage: test
+  image: $DEFAULT_IMAGE
+  artifacts:
+    reports:
+      junit:
+        - build/test-results/test/TEST-*.xml
+  services:
+    - name: docker:27-dind
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - ./gradlew test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
+
+# --------------------------------------------
+# Package Stage
+# --------------------------------------------
+package:
+  stage: package
+  image: eclipse-temurin:25-jdk-alpine
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - DATE=$(date +%Y%m%d)
+    - VERSION="$MAJOR.$MINOR.$DATE-$CI_PIPELINE_ID"
+    - IMAGE="$CI_REGISTRY_IMAGE/ttt-backend"
+    - echo "Building version $VERSION"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+    - ./gradlew bootBuildImage --imageName=$IMAGE:$VERSION
+    - docker tag $IMAGE:$VERSION $IMAGE:latest
+    - docker push $IMAGE:$VERSION
+    - docker push $IMAGE:latest
+  rules:
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE != "merge_request_event"

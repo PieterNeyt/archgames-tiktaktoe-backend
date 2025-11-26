@@ -53,6 +53,8 @@ package:
   variables:
     DOCKER_HOST: "tcp://docker:2375"
     DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - apk add --no-cache docker-cli
   script:
     - DATE=$(date +%Y%m%d)
     - VERSION="$MAJOR.$MINOR.$DATE-$CI_PIPELINE_ID"

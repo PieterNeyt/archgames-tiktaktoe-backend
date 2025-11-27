@@ -10,7 +10,7 @@ import java.util.Map;
 @Component
 public class AiClient {
     private final RestTemplate restTemplate;
-    private final String aiServiceUrl = "http://localhost:9001/ai/move";
+    private final String aiServiceUrl = "http://34.79.40.150/ai-player/move";
 
     public AiClient(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;

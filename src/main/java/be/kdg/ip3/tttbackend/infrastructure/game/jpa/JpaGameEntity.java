@@ -40,13 +40,12 @@ public class JpaGameEntity {
 
     public Game toDomain() {
         return new Game(
-                new GameId(gameId),
+                new GameId(gameId), ,
                 board.toDomain(),
                 currentPlayer,
                 aiPlayer,
                 gameStatus,
-                winner
-        );
+                winner);
     }
 
 }

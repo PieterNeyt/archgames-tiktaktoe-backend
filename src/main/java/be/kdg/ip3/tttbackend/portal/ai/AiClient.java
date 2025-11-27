@@ -1,4 +1,4 @@
-package be.kdg.ip3.tttbackend.infrastructure.ai;
+package be.kdg.ip3.tttbackend.portal.ai;
 
 import be.kdg.ip3.tttbackend.api.dto.AiGameStateDto;
 import org.springframework.context.annotation.Bean;

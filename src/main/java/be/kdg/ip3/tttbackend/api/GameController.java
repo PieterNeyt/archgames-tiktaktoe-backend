@@ -28,14 +28,14 @@ public class GameController {
         this.launcherClient = launcherClient;
     }
 
-    @PostMapping
-    public ResponseEntity<GameDto> createGame() {
-        Game game = gameService.createNewGame();
-
-        var location = URI.create("/ttt/api/games/" + game.getGameId().id());
-        return ResponseEntity.created(location).body(GameDto.FromDomain(game));
-
-    }
+//    @PostMapping
+//    public ResponseEntity<GameDto> createGame() {
+//        Game game = gameService.createNewGame();
+//
+//        var location = URI.create("/ttt/api/games/" + game.getGameId().id());
+//        return ResponseEntity.created(location).body(GameDto.FromDomain(game));
+//
+//    }
 
     @PostMapping("/ai")
     public ResponseEntity<GameDto> createGameWithAi(@RequestParam PlayerMark human, @RequestParam PlayerMark ai) {

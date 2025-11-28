@@ -13,6 +13,7 @@ import java.util.UUID;
 public class JpaGameEntity {
     @Id
     private UUID gameId;
+    private UUID sessionId;
     @Embedded
     private JpaBoard board;
     @Enumerated(EnumType.STRING)
@@ -29,6 +30,7 @@ public class JpaGameEntity {
         JpaGameEntity entity = new JpaGameEntity();
 
         entity.gameId = game.getGameId().id();
+        entity.sessionId = game.getSessionId() .id();
         entity.board = new JpaBoard(game.getBoard());
         entity.currentPlayer = game.getCurrentPlayer();
         entity.aiPlayer = game.getAiPlayer();
@@ -40,7 +42,9 @@ public class JpaGameEntity {
 
     public Game toDomain() {
         return new Game(
-                new GameId(gameId), ,
+                new GameId(gameId),
+                new SessionId(sessionId)
+                ,
                 board.toDomain(),
                 currentPlayer,
                 aiPlayer,

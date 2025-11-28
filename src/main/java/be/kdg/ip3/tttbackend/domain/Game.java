@@ -1,10 +1,12 @@
 package be.kdg.ip3.tttbackend.domain;
 
 import lombok.Getter;
+import org.jmolecules.ddd.annotation.AggregateRoot;
 
 import java.util.Objects;
 
 @Getter
+@AggregateRoot
 public class Game {
     private final GameId gameId;
     private final SessionId sessionId;

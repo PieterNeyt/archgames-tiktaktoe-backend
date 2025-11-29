@@ -1,7 +1,7 @@
 package be.kdg.ip3.tttbackend.infrastructure.ai;
 
 import be.kdg.ip3.tttbackend.api.dto.AiGameStateDto;
-import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -10,7 +10,8 @@ import java.util.Map;
 @Component
 public class AiClient {
     private final RestTemplate restTemplate;
-    private final String aiServiceUrl = "http://localhost:9001/ai/move";
+    @Value("${ai.service.url}")
+    private String aiServiceUrl;
 
     public AiClient(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;

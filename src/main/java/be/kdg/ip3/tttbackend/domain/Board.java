@@ -1,8 +1,11 @@
 package be.kdg.ip3.tttbackend.domain;
 
+import org.jmolecules.ddd.annotation.Entity;
+
 import java.util.Arrays;
 import java.util.List;
 
+@Entity
 public class Board {
     public static final int SIZE = 3;
     private final PlayerMark[][] board;

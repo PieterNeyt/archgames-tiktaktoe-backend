@@ -1,4 +1,4 @@
-package be.kdg.ip3.tttbackend.application;
+package be.kdg.ip3.tttbackend.portal.rest;
 
 import be.kdg.ip3.tttbackend.api.dto.SessionInfo;
 import be.kdg.ip3.tttbackend.domain.SessionId;

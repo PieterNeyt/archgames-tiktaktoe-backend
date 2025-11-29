@@ -1,20 +1,24 @@
 package be.kdg.ip3.tttbackend.domain;
 
 import lombok.Getter;
+import org.jmolecules.ddd.annotation.AggregateRoot;
 
 import java.util.Objects;
 
 @Getter
+@AggregateRoot
 public class Game {
     private final GameId gameId;
+    private final SessionId sessionId;
     private final Board board;
     private final PlayerMark currentPlayer;
     private final PlayerMark aiPlayer;
     private final GameStatus gameStatus;
     private final PlayerMark winner;
 
-    public Game(GameId gameId, Board board, PlayerMark currentPlayer, PlayerMark aiPlayer, GameStatus gameStatus, PlayerMark winner) {
+    public Game(GameId gameId, SessionId sessionId, Board board, PlayerMark currentPlayer, PlayerMark aiPlayer, GameStatus gameStatus, PlayerMark winner) {
         this.gameId = gameId;
+        this.sessionId = sessionId;
         this.board = board;
         this.currentPlayer = currentPlayer;
         this.aiPlayer = aiPlayer;
@@ -22,22 +26,26 @@ public class Game {
         this.winner = winner;
     }
 
-    public static Game newHvHGame() {
+    public static Game newHvHGame(SessionId sessionId) {
         return new Game(
                 GameId.generate(),
+                sessionId,
                 new Board(),
                 PlayerMark.X,
                 null,
                 GameStatus.IN_PROGRESS,
-                null
-        );
+                null);
     }
 
     public boolean isFinished() {
         return gameStatus != GameStatus.IN_PROGRESS;
     }
 
-    public static Game newHvAIGame(PlayerMark aiPlayer, PlayerMark humanPlayer) {
+    public static Game newHvAIGame(PlayerMark humanPlayer, PlayerMark aiPlayer) {
+        return newHvAIGame(null, humanPlayer, aiPlayer);
+    }
+
+    public static Game newHvAIGame(SessionId sessionId, PlayerMark humanPlayer, PlayerMark aiPlayer) {
         Objects.requireNonNull(aiPlayer);
         Objects.requireNonNull(humanPlayer);
 
@@ -47,8 +55,9 @@ public class Game {
 
         return new Game(
                 GameId.generate(),
+                sessionId,
                 new Board(),
-                humanPlayer, // h begint
+                humanPlayer, // human start
                 aiPlayer,
                 GameStatus.IN_PROGRESS,
                 null
@@ -74,16 +83,16 @@ public class Game {
             newGameStatus = GameStatus.IN_PROGRESS;
         }
 
-        PlayerMark nextPlayer =  (newGameStatus == GameStatus.IN_PROGRESS) ? toggle(currentPlayer) : currentPlayer;
+        PlayerMark nextPlayer = (newGameStatus == GameStatus.IN_PROGRESS) ? toggle(currentPlayer) : currentPlayer;
 
         return new Game(
                 this.gameId,
+                this.sessionId,
                 newBoard,
                 nextPlayer,
                 this.aiPlayer,
                 newGameStatus,
-                newWinner
-        );
+                newWinner);
     }
 
     private PlayerMark toggle(PlayerMark player) {

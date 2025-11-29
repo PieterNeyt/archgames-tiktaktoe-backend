@@ -4,7 +4,7 @@ import be.kdg.ip3.tttbackend.api.dto.GameDto;
 import be.kdg.ip3.tttbackend.api.dto.MoveRequest;
 import be.kdg.ip3.tttbackend.api.dto.SessionInfo;
 import be.kdg.ip3.tttbackend.application.GameService;
-import be.kdg.ip3.tttbackend.application.LauncherClient;
+import be.kdg.ip3.tttbackend.portal.rest.LauncherClient;
 import be.kdg.ip3.tttbackend.domain.Game;
 import be.kdg.ip3.tttbackend.domain.GameId;
 import be.kdg.ip3.tttbackend.domain.PlayerMark;
@@ -28,14 +28,14 @@ public class GameController {
         this.launcherClient = launcherClient;
     }
 
-    @PostMapping
-    public ResponseEntity<GameDto> createGame() {
-        Game game = gameService.createNewGame();
-
-        var location = URI.create("/ttt/api/games/" + game.getGameId().id());
-        return ResponseEntity.created(location).body(GameDto.FromDomain(game));
-
-    }
+//    @PostMapping
+//    public ResponseEntity<GameDto> createGame() {
+//        Game game = gameService.createNewGame();
+//
+//        var location = URI.create("/ttt/api/games/" + game.getGameId().id());
+//        return ResponseEntity.created(location).body(GameDto.FromDomain(game));
+//
+//    }
 
     @PostMapping("/ai")
     public ResponseEntity<GameDto> createGameWithAi(@RequestParam PlayerMark human, @RequestParam PlayerMark ai) {
@@ -63,18 +63,16 @@ public class GameController {
             @RequestParam(required = false) PlayerMark human,
             @RequestParam(required = false) PlayerMark ai
     ) {
-        // 1. Validate session via launcher API
         SessionInfo session = launcherClient.validateSession(new SessionId(sessionId));
 
+        var sid = new SessionId(sessionId);
 
-
-        // 2. Create game
         Game game = (human != null && ai != null)
-                ? gameService.createNewGameWithAi(human, ai)
-                : gameService.createNewGame();
+                ? gameService.createNewGameWithAi(sid, human, ai)
+                : gameService.createNewGame(sid);
 
-        // 3. Return game
         return ResponseEntity.ok(GameDto.FromDomain(game));
     }
+
 
 }

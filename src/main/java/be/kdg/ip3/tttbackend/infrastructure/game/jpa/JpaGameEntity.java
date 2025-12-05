@@ -30,7 +30,7 @@ public class JpaGameEntity {
         JpaGameEntity entity = new JpaGameEntity();
 
         entity.gameId = game.getGameId().id();
-        entity.sessionId = game.getSessionId() .id();
+        entity.sessionId = game.getSessionId().id();
         entity.board = new JpaBoard(game.getBoard());
         entity.currentPlayer = game.getCurrentPlayer();
         entity.aiPlayer = game.getAiPlayer();

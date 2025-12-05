@@ -4,12 +4,16 @@ package be.kdg.ip3.tttbackend.application;
 import be.kdg.ip3.tttbackend.api.dto.AiGameStateDto;
 import be.kdg.ip3.tttbackend.domain.*;
 import be.kdg.ip3.tttbackend.portal.ai.AiClient;
-import be.kdg.ip3.tttbackend.portal.messaging.config.tttGameResultMessage;
+import be.kdg.ip3.tttbackend.portal.messaging.config.TttGameResultMessage;
 import be.kdg.ip3.tttbackend.portal.messaging.sender.tttMessagePublisher;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 
+
+@Slf4j
 @Service
 @Transactional
 public class GameService {
@@ -33,9 +37,9 @@ public class GameService {
         return game;
     }
 
-    public Game createNewGameWithAi(PlayerMark human, PlayerMark ai) {
-        return createNewGameWithAi(null, human, ai);
-    }
+//    public Game createNewGameWithAi(PlayerMark human, PlayerMark ai) {
+//        return createNewGameWithAi(null, human, ai);
+//    }
 
     public Game createNewGameWithAi(SessionId sessionId, PlayerMark human, PlayerMark ai) {
         Game game = Game.newHvAIGame(sessionId, human, ai);
@@ -86,6 +90,7 @@ public class GameService {
             Game finalUpdatedGame = updatedGame.playMove(aiRow, aiCol);
             games.save(finalUpdatedGame);
             publishResultIfFinished(finalUpdatedGame);
+            log.debug("AI played move at row {}, col {}", aiRow, aiCol);
             return finalUpdatedGame;
         }
 
@@ -97,12 +102,13 @@ public class GameService {
         if (!game.isFinished()) return;
         if (game.getSessionId() == null) return;
 
-        var message = new tttGameResultMessage(
+        var message = new TttGameResultMessage(
                 game.getSessionId().id(),
                 game.getGameId().id(),
                 game.getWinner() != null
                         ? game.getWinner().name()
-                        : "DRAW"
+                        : "DRAW",
+                LocalDateTime.now()
         );
 
         messagePublisher.publishGameResult(message);

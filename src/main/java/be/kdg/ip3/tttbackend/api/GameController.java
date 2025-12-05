@@ -38,8 +38,8 @@ public class GameController {
 //    }
 
     @PostMapping("/ai")
-    public ResponseEntity<GameDto> createGameWithAi(@RequestParam PlayerMark human, @RequestParam PlayerMark ai) {
-        Game game = gameService.createNewGameWithAi(human, ai);
+    public ResponseEntity<GameDto> createGameWithAi(@RequestParam UUID sessionId, @RequestParam PlayerMark human, @RequestParam PlayerMark ai) {
+        Game game = gameService.createNewGameWithAi(new SessionId(sessionId), human, ai);
 
         var location = URI.create("/ttt/api/games/" + game.getGameId().id());
         return ResponseEntity.created(location).body(GameDto.FromDomain(game));

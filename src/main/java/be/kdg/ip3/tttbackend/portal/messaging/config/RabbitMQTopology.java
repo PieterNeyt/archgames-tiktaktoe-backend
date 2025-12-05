@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQTopology {
 
     public static final String TTT_EXCHANGE_NAME = "ttt-exchange";
-    public static final String TTT_QUEUE_NAME = "order-queue";
+    public static final String TTT_QUEUE_NAME = "ttt-queue";
 
 
     // Order topology

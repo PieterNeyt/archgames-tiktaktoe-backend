@@ -10,12 +10,14 @@ import be.kdg.ip3.tttbackend.domain.GameId;
 import be.kdg.ip3.tttbackend.domain.PlayerMark;
 import be.kdg.ip3.tttbackend.domain.SessionId;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/ttt/api/games")
 @CrossOrigin(origins = "*")

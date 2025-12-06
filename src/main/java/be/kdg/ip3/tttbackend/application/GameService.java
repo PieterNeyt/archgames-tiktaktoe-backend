@@ -104,7 +104,6 @@ public class GameService {
 
         var message = new TttGameResultMessage(
                 game.getSessionId().id(),
-                game.getGameId().id(),
                 game.getWinner() != null
                         ? game.getWinner().name()
                         : "DRAW",

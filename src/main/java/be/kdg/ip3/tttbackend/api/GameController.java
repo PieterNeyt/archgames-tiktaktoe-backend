@@ -76,5 +76,20 @@ public class GameController {
         return ResponseEntity.ok(GameDto.FromDomain(game));
     }
 
+    @PostMapping("/session/{sessionId}/startmultiplayer")
+    public ResponseEntity<GameDto> startMultiPlayerGameFromSession(
+            @PathVariable UUID sessionId,
+            @RequestParam(required = false) PlayerMark human,
+            @RequestParam(required = false) PlayerMark ai
+    ) {
+        SessionInfo session = launcherClient.validateSession(new SessionId(sessionId));
+
+        var sid = new SessionId(sessionId);
+
+        Game game = gameService.createNewGame(sid);
+
+        return ResponseEntity.ok(GameDto.FromDomain(game));
+    }
+
 
 }

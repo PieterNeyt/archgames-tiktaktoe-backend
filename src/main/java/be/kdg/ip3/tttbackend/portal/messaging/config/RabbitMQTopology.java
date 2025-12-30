@@ -11,7 +11,6 @@ public class RabbitMQTopology {
     public static final String TTT_QUEUE_NAME = "ttt-queue";
 
     public static final String REGISTER_GAME_EXCHANGE = "register-exchange";
-    public static final String REGISTER_GAME_QUEUE = "register-queue";
 
 
     // ttt topology
@@ -29,22 +28,5 @@ public class RabbitMQTopology {
     @Bean
     Binding tttQueueToTttExchangeBinding() {
         return BindingBuilder.bind(tttQueue()).to(tttExchange()).with("ttt.game.*");
-    }
-
-    // register game topology
-    
-    @Bean
-    TopicExchange registerExchange() {
-        return new TopicExchange(REGISTER_GAME_EXCHANGE);
-    }
-
-    @Bean
-    Queue registerQueue() {
-        return QueueBuilder.nonDurable(REGISTER_GAME_QUEUE).build();
-    }
-
-    @Bean
-    Binding registerQueueToRegisterExchangeBinding() {
-        return BindingBuilder.bind(registerQueue()).to(registerExchange()).with("register.game.*");
     }
 }

@@ -1,11 +1,11 @@
 package be.kdg.ip3.tttbackend.portal.messaging.sender;
 
-import be.kdg.ip3.tttbackend.portal.messaging.config.GameGenre;
 import be.kdg.ip3.tttbackend.portal.messaging.config.RabbitMQTopology;
 import be.kdg.ip3.tttbackend.portal.messaging.config.RegisterGameMessage;
 import be.kdg.ip3.tttbackend.portal.messaging.config.TttGameResultMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -16,6 +16,21 @@ import java.math.BigDecimal;
 @Component
 public class tttMessagePublisher {
     private final RabbitTemplate rabbitTemplate;
+
+    @Value("${game.title}")
+    private String title;
+    @Value("${game.description}")
+    private String description;
+    @Value("${game.imageUrl}")
+    private String imageUrl;
+    @Value("${game.gameUrl}")
+    private String gameUrl;
+    @Value("${game.price}")
+    private double price;
+    @Value("${game.genre}")
+    private String genre;
+    @Value("${game.maxlobbysize}")
+    private int maxLobbySize;
 
     public tttMessagePublisher(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
@@ -33,13 +48,13 @@ public class tttMessagePublisher {
     @EventListener(ApplicationReadyEvent.class)
     public void publishGameRegister() {
         var message = new RegisterGameMessage(
-                "Tic tac toe from publish",
-                "tinker tanker toe",
-                null,
-                "http://localhost:5173/kust-men-klote",
-                BigDecimal.valueOf(23.5),
-                GameGenre.STRATEGY,
-                2
+                title,
+                description,
+                imageUrl,
+                gameUrl,
+                BigDecimal.valueOf(price),
+                genre,
+                maxLobbySize
         );
         rabbitTemplate.convertAndSend(
                 RabbitMQTopology.REGISTER_GAME_EXCHANGE,

@@ -10,8 +10,10 @@ public class RabbitMQTopology {
     public static final String TTT_EXCHANGE_NAME = "ttt-exchange";
     public static final String TTT_QUEUE_NAME = "ttt-queue";
 
+    public static final String REGISTER_GAME_EXCHANGE = "register-exchange";
 
-    // Order topology
+
+    // ttt topology
 
     @Bean
     TopicExchange tttExchange() {

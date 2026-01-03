@@ -35,13 +35,20 @@ public class GameService {
         SessionInfo session = launcherClient.validateSession(new SessionId(sessionId));
 
         games.findActiveGameByLobbyId(lobbyId).ifPresent(g -> {
-            throw new IllegalStateException("Er is al een spel actief in deze lobby.");
+            throw new IllegalStateException("There is already a game with the same lobby ID");
         });
 
         Game game = Game.createSinglePlayer(sessionId, session.playerId(), lobbyId, session.gameId(), humanMark);
         games.save(game);
+
+        if (game.getAiPlayer() == PlayerMark.X) {
+            triggerAiMove(game);
+            games.save(game);
+        }
+
         return game;
     }
+
 
     public Game joinOrCreateMultiplayer(UUID sessionId, UUID lobbyId) {
         SessionInfo session = launcherClient.validateSession(new SessionId(sessionId));

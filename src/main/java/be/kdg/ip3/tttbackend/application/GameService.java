@@ -3,6 +3,7 @@ package be.kdg.ip3.tttbackend.application;
 import be.kdg.ip3.tttbackend.api.dto.AiGameStateDto;
 import be.kdg.ip3.tttbackend.domain.*;
 import be.kdg.ip3.tttbackend.portal.ai.AiClient;
+import be.kdg.ip3.tttbackend.portal.messaging.config.AchievementUnlockedMessage;
 import be.kdg.ip3.tttbackend.portal.messaging.config.TttGameResultMessage;
 import be.kdg.ip3.tttbackend.portal.messaging.sender.tttMessagePublisher;
 import be.kdg.ip3.tttbackend.portal.rest.LauncherClient;
@@ -37,7 +38,7 @@ public class GameService {
             throw new IllegalStateException("Er is al een spel actief in deze lobby.");
         });
 
-        Game game = Game.createSinglePlayer(sessionId, lobbyId, session.gameId(), humanMark);
+        Game game = Game.createSinglePlayer(sessionId, session.playerId(), lobbyId, session.gameId(), humanMark);
         games.save(game);
         return game;
     }
@@ -52,14 +53,14 @@ public class GameService {
 
             if (game.getGameStatus() == GameStatus.WAITING_FOR_PLAYER) {
                 if (sessionId.equals(game.getSessionIdX()) || sessionId.equals(game.getSessionIdO())) return game;
-                game.join(sessionId);
+                game.join(sessionId, session.playerId());
                 games.save(game);
                 return game;
             }
             return game; // Reconnect voor bestaande speler
         }
 
-        Game newGame = Game.createWaitingMultiplayer(sessionId, lobbyId, session.gameId());
+        Game newGame = Game.createWaitingMultiplayer(sessionId, session.playerId(), lobbyId, session.gameId());
         games.save(newGame);
         return newGame;
     }
@@ -87,11 +88,34 @@ public class GameService {
     }
 
     private void publishResult(Game game) {
-        UUID winnerSession = (game.getWinner() == PlayerMark.X) ? game.getSessionIdX() : game.getSessionIdO();
-        if (winnerSession == null) return; // Bij draw of AI winst
+        // Publish achievement events alleen voor niet-null player IDs
+        if (game.getPlayerXId() != null) {
+            messagePublisher.publishAchievementUnlock(
+                    new AchievementUnlockedMessage("EXT-TT-01", game.getPlayerXId(), game.getGameTypeId())
+            );
+        }
+        if (game.getPlayerOId() != null) {
+            messagePublisher.publishAchievementUnlock(
+                    new AchievementUnlockedMessage("EXT-TT-01", game.getPlayerOId(), game.getGameTypeId())
+            );
+        }
 
-        messagePublisher.publishGameResult(new TttGameResultMessage(winnerSession,
-                game.getWinner() != null ? game.getWinner().name() : "DRAW", LocalDateTime.now()));
+        // Bepaal winnerSession (kan null zijn bij draw)
+        UUID winnerSession = null;
+        if (game.getWinner() == PlayerMark.X) {
+            winnerSession = game.getSessionIdX();
+        } else if (game.getWinner() == PlayerMark.O) {
+            winnerSession = game.getSessionIdO();
+        }
+
+        if (winnerSession!=null){
+            messagePublisher.publishGameResult(new TttGameResultMessage(
+                    winnerSession,
+                    game.getWinner().name(),
+                    LocalDateTime.now()
+            ));
+        }
+
     }
 
     public Game findById(GameId gameId) {

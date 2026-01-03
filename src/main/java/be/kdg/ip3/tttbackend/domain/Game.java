@@ -17,14 +17,15 @@ public class Game {
     private PlayerMark currentPlayer; // Wie is er aan de beurt (X begint altijd)
     private GameStatus gameStatus;
     private PlayerMark winner;
-
+    private UUID playerXId; // Player-ID van de speler die X heeft
+    private UUID playerOId; // Player-ID van de speler die O heeft
     private UUID sessionIdX; // Sessie-ID van de speler die X heeft
     private UUID sessionIdO; // Sessie-ID van de speler die O heeft
     private final PlayerMark aiPlayer; // Welk teken is de AI (indien van toepassing)
 
     public Game(GameId gameId, UUID lobbyId, UUID gameTypeId, Board board,
                 PlayerMark currentPlayer, GameStatus gameStatus, PlayerMark winner,
-                UUID sessionIdX, UUID sessionIdO, PlayerMark aiPlayer) {
+                UUID sessionIdX, UUID sessionIdO, UUID playerXId, UUID playerOId, PlayerMark aiPlayer) {
         this.gameId = gameId;
         this.lobbyId = lobbyId;
         this.gameTypeId = gameTypeId;
@@ -34,10 +35,11 @@ public class Game {
         this.winner = winner;
         this.sessionIdX = sessionIdX;
         this.sessionIdO = sessionIdO;
+        this.playerXId = playerXId;
+        this.playerOId = playerOId;
         this.aiPlayer = aiPlayer;
     }
-
-    public static Game createWaitingMultiplayer(UUID sessionId, UUID lobbyId, UUID gameTypeId) {
+    public static Game createWaitingMultiplayer(UUID sessionId, UUID playerId, UUID lobbyId, UUID gameTypeId) {
         boolean playerIsX = new Random().nextBoolean();
         return new Game(
                 GameId.generate(),
@@ -47,13 +49,15 @@ public class Game {
                 PlayerMark.X,
                 GameStatus.WAITING_FOR_PLAYER,
                 null,
-                playerIsX ? sessionId : null, // Als player X is, zet sessionId hier
-                playerIsX ? null : sessionId, // Anders zet sessionId bij O
+                playerIsX ? sessionId : null,
+                playerIsX ? null : sessionId,
+                playerIsX ? playerId : null,
+                playerIsX ? null : playerId,
                 null
         );
     }
 
-    public static Game createSinglePlayer(UUID sessionId, UUID lobbyId, UUID gameTypeId, String humanMark) {
+    public static Game createSinglePlayer(UUID sessionId, UUID playerId, UUID lobbyId, UUID gameTypeId, String humanMark) {
         boolean playerIsX = humanMark.equals("X");
         PlayerMark aiMark = playerIsX ? PlayerMark.O : PlayerMark.X;
         return new Game(
@@ -66,17 +70,24 @@ public class Game {
                 null,
                 playerIsX ? sessionId : null,
                 playerIsX ? null : sessionId,
+                playerIsX ? playerId : null,
+                playerIsX ? null : playerId,
                 aiMark
         );
     }
 
-    public void join(UUID sessionId) {
+    public void join(UUID sessionId, UUID playerId) {
         if (this.gameStatus != GameStatus.WAITING_FOR_PLAYER) {
             throw new IllegalStateException("Game is niet in wachtstand.");
         }
         // Vul het lege vakje in
-        if (this.sessionIdX == null) this.sessionIdX = sessionId;
-        else this.sessionIdO = sessionId;
+        if (this.sessionIdX == null) {
+            this.sessionIdX = sessionId;
+            this.playerXId = playerId;
+        } else {
+            this.sessionIdO = sessionId;
+            this.playerOId = playerId;
+        }
 
         this.gameStatus = GameStatus.IN_PROGRESS;
     }

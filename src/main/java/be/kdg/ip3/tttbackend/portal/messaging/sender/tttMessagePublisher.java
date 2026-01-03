@@ -1,5 +1,6 @@
 package be.kdg.ip3.tttbackend.portal.messaging.sender;
 
+import be.kdg.ip3.tttbackend.portal.messaging.config.AchievementUnlockedMessage;
 import be.kdg.ip3.tttbackend.portal.messaging.config.RabbitMQTopology;
 import be.kdg.ip3.tttbackend.portal.messaging.config.RegisterGameMessage;
 import be.kdg.ip3.tttbackend.portal.messaging.config.TttGameResultMessage;
@@ -45,6 +46,15 @@ public class tttMessagePublisher {
         log.info("Published TTT game result message: {}", message);
     }
 
+    public void publishAchievementUnlock(AchievementUnlockedMessage message) {
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQTopology.ACHIEVEMENT_EXCHANGE_NAME,
+                "checkers.achievement.unlock",
+                message
+        );
+
+    }
     @EventListener(ApplicationReadyEvent.class)
     public void publishGameRegister() {
         var message = new RegisterGameMessage(

@@ -17,6 +17,8 @@ public class JpaGameEntity {
     private UUID gameTypeId;
     private UUID sessionIdX;
     private UUID sessionIdO;
+    private UUID playerXId;
+    private UUID playerOId;
 
     @Embedded
     private JpaBoard board;
@@ -40,6 +42,8 @@ public class JpaGameEntity {
         entity.gameTypeId = game.getGameTypeId();
         entity.sessionIdX = game.getSessionIdX();
         entity.sessionIdO = game.getSessionIdO();
+        entity.playerXId = game.getPlayerXId();
+        entity.playerOId = game.getPlayerOId();
         entity.board = new JpaBoard(game.getBoard());
         entity.currentPlayer = game.getCurrentPlayer();
         entity.aiPlayer = game.getAiPlayer();
@@ -50,6 +54,6 @@ public class JpaGameEntity {
 
     public Game toDomain() {
         return new Game(new GameId(gameId), lobbyId, gameTypeId, board.toDomain(),
-                currentPlayer, gameStatus, winner, sessionIdX, sessionIdO, aiPlayer);
+                currentPlayer, gameStatus, winner, sessionIdX, sessionIdO, playerXId, playerOId, aiPlayer);
     }
 }

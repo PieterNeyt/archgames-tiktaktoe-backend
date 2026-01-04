@@ -9,6 +9,6 @@ public record RegisterGameMessage(
         String gameUrl,
         BigDecimal price,
         String genre,
-        int maxlobbysize
+        int maxLobbySize
 ) {
 }

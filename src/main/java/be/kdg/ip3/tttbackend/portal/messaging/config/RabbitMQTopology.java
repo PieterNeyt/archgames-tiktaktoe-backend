@@ -11,6 +11,7 @@ public class RabbitMQTopology {
     public static final String TTT_QUEUE_NAME = "ttt-queue";
 
     public static final String REGISTER_GAME_EXCHANGE = "register-exchange";
+    public static final String ACHIEVEMENT_EXCHANGE_NAME = "achievement-exchange";
 
 
     // ttt topology
@@ -28,5 +29,21 @@ public class RabbitMQTopology {
     @Bean
     Binding tttQueueToTttExchangeBinding() {
         return BindingBuilder.bind(tttQueue()).to(tttExchange()).with("ttt.game.*");
+    }
+
+    @Bean
+    TopicExchange achievementExchange() {
+        return new TopicExchange(ACHIEVEMENT_EXCHANGE_NAME);
+    }
+    @Bean
+    Queue achievementQueue() {
+        return QueueBuilder.nonDurable("achievement-queue").build();
+    }
+
+    @Bean
+    Binding achievementQueueToAchievementExchangeBinding() {
+        return BindingBuilder.bind(achievementQueue())
+                .to(achievementExchange())
+                .with("*.achievement.unlock");
     }
 }

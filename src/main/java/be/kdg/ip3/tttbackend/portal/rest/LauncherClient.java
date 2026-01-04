@@ -21,4 +21,5 @@ public class LauncherClient {
     public SessionInfo validateSession(SessionId sessionId) {
         String url = launcherUrl + "/api/lobbies/sessions/" + sessionId.id();
         return client.getForObject(url, SessionInfo.class);
-    }}
+    }
+}

@@ -1,4 +1,5 @@
 package be.kdg.ip3.tttbackend.api.dto;
 
-public record MoveRequest(int row, int col) {
-}
+import java.util.UUID;
+
+public record MoveRequest(UUID sessionId, int row, int col) {}

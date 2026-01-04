@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public class DbGameRepository implements GameRepository {
@@ -32,5 +33,12 @@ public class DbGameRepository implements GameRepository {
     @Override
     public List<Game> findAll() {
         return this.jpaGameRepository.findAll().stream().map(JpaGameEntity::toDomain).toList();
+    }
+
+    @Override
+    public Optional<Game> findActiveGameByLobbyId(UUID lobbyId) {
+        return jpaGameRepository
+                .findActiveGameByLobbyId(lobbyId)
+                .map(JpaGameEntity::toDomain);
     }
 }

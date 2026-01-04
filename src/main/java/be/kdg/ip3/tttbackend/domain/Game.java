@@ -3,138 +3,147 @@ package be.kdg.ip3.tttbackend.domain;
 import lombok.Getter;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 
-import java.util.Objects;
+import java.util.Random;
+import java.util.UUID;
 
 @Getter
 @AggregateRoot
 public class Game {
     private final GameId gameId;
-    private final SessionId sessionId;
-    private final Board board;
-    private final PlayerMark currentPlayer;
-    private final PlayerMark aiPlayer;
-    private final GameStatus gameStatus;
-    private final PlayerMark winner;
+    private final UUID lobbyId;
+    private final UUID gameTypeId;
 
-    public Game(GameId gameId, SessionId sessionId, Board board, PlayerMark currentPlayer, PlayerMark aiPlayer, GameStatus gameStatus, PlayerMark winner) {
+    private Board board;
+    private PlayerMark currentPlayer; // Wie is er aan de beurt (X begint altijd)
+    private GameStatus gameStatus;
+    private PlayerMark winner;
+    private UUID playerXId; // Player-ID van de speler die X heeft
+    private UUID playerOId; // Player-ID van de speler die O heeft
+    private UUID sessionIdX; // Sessie-ID van de speler die X heeft
+    private UUID sessionIdO; // Sessie-ID van de speler die O heeft
+    private final PlayerMark aiPlayer; // Welk teken is de AI (indien van toepassing)
+
+    public Game(GameId gameId, UUID lobbyId, UUID gameTypeId, Board board,
+                PlayerMark currentPlayer, GameStatus gameStatus, PlayerMark winner,
+                UUID sessionIdX, UUID sessionIdO, UUID playerXId, UUID playerOId, PlayerMark aiPlayer) {
         this.gameId = gameId;
-        this.sessionId = sessionId;
+        this.lobbyId = lobbyId;
+        this.gameTypeId = gameTypeId;
         this.board = board;
         this.currentPlayer = currentPlayer;
-        this.aiPlayer = aiPlayer;
         this.gameStatus = gameStatus;
         this.winner = winner;
+        this.sessionIdX = sessionIdX;
+        this.sessionIdO = sessionIdO;
+        this.playerXId = playerXId;
+        this.playerOId = playerOId;
+        this.aiPlayer = aiPlayer;
     }
-
-    public static Game newHvHGame(SessionId sessionId) {
+    public static Game createWaitingMultiplayer(UUID sessionId, UUID playerId, UUID lobbyId, UUID gameTypeId) {
+        boolean playerIsX = new Random().nextBoolean();
         return new Game(
                 GameId.generate(),
-                sessionId,
+                lobbyId,
+                gameTypeId,
                 new Board(),
                 PlayerMark.X,
+                GameStatus.WAITING_FOR_PLAYER,
                 null,
-                GameStatus.IN_PROGRESS,
-                null);
-    }
-
-    public boolean isFinished() {
-        return gameStatus != GameStatus.IN_PROGRESS;
-    }
-
-    public static Game newHvAIGame(PlayerMark humanPlayer, PlayerMark aiPlayer) {
-        return newHvAIGame(null, humanPlayer, aiPlayer);
-    }
-
-    public static Game newHvAIGame(SessionId sessionId, PlayerMark humanPlayer, PlayerMark aiPlayer) {
-        Objects.requireNonNull(aiPlayer);
-        Objects.requireNonNull(humanPlayer);
-
-        if (humanPlayer.equals(aiPlayer)) {
-            throw new IllegalArgumentException("AI player and human player must be different");
-        }
-
-        return new Game(
-                GameId.generate(),
-                sessionId,
-                new Board(),
-                humanPlayer, // human start
-                aiPlayer,
-                GameStatus.IN_PROGRESS,
+                playerIsX ? sessionId : null,
+                playerIsX ? null : sessionId,
+                playerIsX ? playerId : null,
+                playerIsX ? null : playerId,
                 null
         );
     }
 
-    public Game playMove(int row, int col) {
-        if (gameStatus != GameStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Game is already over");
-        }
-
-        Board newBoard = board.placeMark(row, col, currentPlayer);
-        PlayerMark winnerAfterMove = detectWinner(newBoard);
-        GameStatus newGameStatus;
-        PlayerMark newWinner = null;
-
-        if (winnerAfterMove != null) {
-            newGameStatus = GameStatus.FINISHED;
-            newWinner = winnerAfterMove;
-        } else if (newBoard.isFull()) {
-            newGameStatus = GameStatus.DRAW;
-        } else {
-            newGameStatus = GameStatus.IN_PROGRESS;
-        }
-
-        PlayerMark nextPlayer = (newGameStatus == GameStatus.IN_PROGRESS) ? toggle(currentPlayer) : currentPlayer;
-
+    public static Game createSinglePlayer(UUID sessionId, UUID playerId, UUID lobbyId, UUID gameTypeId, String humanMark) {
+        boolean playerIsX = humanMark.equals("X");
+        PlayerMark aiMark = playerIsX ? PlayerMark.O : PlayerMark.X;
         return new Game(
-                this.gameId,
-                this.sessionId,
-                newBoard,
-                nextPlayer,
-                this.aiPlayer,
-                newGameStatus,
-                newWinner);
+                GameId.generate(),
+                lobbyId,
+                gameTypeId,
+                new Board(),
+                PlayerMark.X,
+                GameStatus.IN_PROGRESS,
+                null,
+                playerIsX ? sessionId : null,
+                playerIsX ? null : sessionId,
+                playerIsX ? playerId : null,
+                playerIsX ? null : playerId,
+                aiMark
+        );
     }
 
-    private PlayerMark toggle(PlayerMark player) {
-        return (player == PlayerMark.X) ? PlayerMark.O : PlayerMark.X;
+    public void join(UUID sessionId, UUID playerId) {
+        if (this.gameStatus != GameStatus.WAITING_FOR_PLAYER) {
+            throw new IllegalStateException("Game is niet in wachtstand.");
+        }
+        // Vul het lege vakje in
+        if (this.sessionIdX == null) {
+            this.sessionIdX = sessionId;
+            this.playerXId = playerId;
+        } else {
+            this.sessionIdO = sessionId;
+            this.playerOId = playerId;
+        }
+
+        this.gameStatus = GameStatus.IN_PROGRESS;
+    }
+
+    public void makeMove(int row, int col, UUID sessionId) {
+        if (gameStatus != GameStatus.IN_PROGRESS) throw new IllegalStateException("Game is over.");
+
+        // Bepaal de verwachte sessionId voor de huidige speler
+        UUID expectedSession = (currentPlayer == PlayerMark.X) ? sessionIdX : sessionIdO;
+
+        // Validatie: komt de sessionId overeen met de huidige beurt?
+        // Als sessionId null is, gaan we ervan uit dat het een AI-zet is
+        // Als expectedSession null is, dan is de huidige speler de AI (toegestaan)
+        if (sessionId != null && !sessionId.equals(expectedSession)) {
+            throw new IllegalArgumentException("Het is niet jouw beurt!");
+        }
+
+        // Extra validatie: als sessionId null is (AI-zet), moet de huidige speler ook de AI zijn
+        if (sessionId == null && !currentPlayer.equals(aiPlayer)) {
+            throw new IllegalArgumentException("Alleen de AI mag een zet doen zonder sessionId!");
+        }
+
+        this.board = board.placeMark(row, col, currentPlayer);
+        updateStatus();
+
+        if (gameStatus == GameStatus.IN_PROGRESS) {
+            this.currentPlayer = (currentPlayer == PlayerMark.X) ? PlayerMark.O : PlayerMark.X;
+        }
+    }
+
+    private void updateStatus() {
+        PlayerMark winnerFound = detectWinner(board);
+        if (winnerFound != null) {
+            this.winner = winnerFound;
+            this.gameStatus = GameStatus.FINISHED;
+        } else if (board.isFull()) {
+            this.gameStatus = GameStatus.DRAW;
+        }
+    }
+
+    public boolean isFinished() {
+        return gameStatus == GameStatus.FINISHED || gameStatus == GameStatus.DRAW;
     }
 
     private PlayerMark detectWinner(Board board) {
-        // Rijen
-        for (int row = 0; row < Board.SIZE; row++) {
-            PlayerMark first = board.getCell(row, 0);
-            if (first != PlayerMark.EMPTY &&
-                    first == board.getCell(row, 1) &&
-                    first == board.getCell(row, 2)) {
-                return first;
-            }
+        // Logica zoals je die al had (rijen, kolommen, diagonalen checken)
+        for (int i = 0; i < 3; i++) {
+            if (checkThree(board.getCell(i, 0), board.getCell(i, 1), board.getCell(i, 2))) return board.getCell(i, 0);
+            if (checkThree(board.getCell(0, i), board.getCell(1, i), board.getCell(2, i))) return board.getCell(0, i);
         }
-        // Kolommen
-        for (int col = 0; col < Board.SIZE; col++) {
-            PlayerMark first = board.getCell(0, col);
-            if (first != PlayerMark.EMPTY &&
-                    first == board.getCell(1, col) &&
-                    first == board.getCell(2, col)) {
-                return first;
-            }
-        }
-
-        // Diagonalen - linksboven naar rechtsonder
-        PlayerMark center = board.getCell(0, 0);
-        if (center != PlayerMark.EMPTY) {
-            if (center == board.getCell(1, 1) && center == board.getCell(2, 2)) {
-                return center;
-            }
-        }
-
-        // Diagonalen - rechtsboven naar linksonder
-        PlayerMark topRight = board.getCell(0, 2);
-        if (topRight != PlayerMark.EMPTY &&
-                topRight == board.getCell(1, 1) &&
-                topRight == board.getCell(2, 0)) {
-            return topRight;
-        }
-
+        if (checkThree(board.getCell(0, 0), board.getCell(1, 1), board.getCell(2, 2))) return board.getCell(1, 1);
+        if (checkThree(board.getCell(0, 2), board.getCell(1, 1), board.getCell(2, 0))) return board.getCell(1, 1);
         return null;
+    }
+
+    private boolean checkThree(PlayerMark p1, PlayerMark p2, PlayerMark p3) {
+        return p1 != PlayerMark.EMPTY && p1 == p2 && p2 == p3;
     }
 }

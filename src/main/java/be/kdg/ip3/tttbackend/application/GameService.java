@@ -1,17 +1,19 @@
 package be.kdg.ip3.tttbackend.application;
 
-
 import be.kdg.ip3.tttbackend.api.dto.AiGameStateDto;
 import be.kdg.ip3.tttbackend.domain.*;
 import be.kdg.ip3.tttbackend.portal.ai.AiClient;
+import be.kdg.ip3.tttbackend.portal.messaging.config.AchievementUnlockedMessage;
 import be.kdg.ip3.tttbackend.portal.messaging.config.TttGameResultMessage;
 import be.kdg.ip3.tttbackend.portal.messaging.sender.tttMessagePublisher;
+import be.kdg.ip3.tttbackend.portal.rest.LauncherClient;
+import be.kdg.ip3.tttbackend.api.dto.SessionInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -20,98 +22,110 @@ public class GameService {
     private final GameRepository games;
     private final AiClient aiClient;
     private final tttMessagePublisher messagePublisher;
+    private final LauncherClient launcherClient;
 
-
-    public GameService(GameRepository games, AiClient aiClient, tttMessagePublisher messagePublisher) {
+    public GameService(GameRepository games, AiClient aiClient, tttMessagePublisher messagePublisher, LauncherClient launcherClient) {
         this.games = games;
         this.aiClient = aiClient;
         this.messagePublisher = messagePublisher;
-    }
-    public Game createGame() {
-        return createNewGame(null);
+        this.launcherClient = launcherClient;
     }
 
-    public Game createNewGame(SessionId sessionId) {
-        Game game = Game.newHvHGame(sessionId);
+    public Game startSinglePlayer(UUID sessionId, UUID lobbyId, String humanMark) {
+        SessionInfo session = launcherClient.validateSession(new SessionId(sessionId));
+
+        games.findActiveGameByLobbyId(lobbyId).ifPresent(g -> {
+            throw new IllegalStateException("There is already a game with the same lobby ID");
+        });
+
+        Game game = Game.createSinglePlayer(sessionId, session.playerId(), lobbyId, session.gameId(), humanMark);
+        games.save(game);
+
+        if (game.getAiPlayer() == PlayerMark.X) {
+            triggerAiMove(game);
+            games.save(game);
+        }
+
+        return game;
+    }
+
+
+    public Game joinOrCreateMultiplayer(UUID sessionId, UUID lobbyId) {
+        SessionInfo session = launcherClient.validateSession(new SessionId(sessionId));
+        var activeGameOpt = games.findActiveGameByLobbyId(lobbyId);
+
+        if (activeGameOpt.isPresent()) {
+            Game game = activeGameOpt.get();
+            if (game.getAiPlayer() != null) throw new IllegalStateException("Wacht tot AI spel klaar is.");
+
+            if (game.getGameStatus() == GameStatus.WAITING_FOR_PLAYER) {
+                if (sessionId.equals(game.getSessionIdX()) || sessionId.equals(game.getSessionIdO())) return game;
+                game.join(sessionId, session.playerId());
+                games.save(game);
+                return game;
+            }
+            return game; // Reconnect voor bestaande speler
+        }
+
+        Game newGame = Game.createWaitingMultiplayer(sessionId, session.playerId(), lobbyId, session.gameId());
+        games.save(newGame);
+        return newGame;
+    }
+
+    public Game playMove(GameId id, UUID sessionId, int row, int col) {
+        Game game = findById(id);
+        game.makeMove(row, col, sessionId);
+
+        if (game.isFinished()) {
+            publishResult(game);
+        } else if (game.getAiPlayer() != null && game.getCurrentPlayer() == game.getAiPlayer()) {
+            triggerAiMove(game);
+        }
+
         games.save(game);
         return game;
     }
 
-//    public Game createNewGameWithAi(PlayerMark human, PlayerMark ai) {
-//        return createNewGameWithAi(null, human, ai);
-//    }
+    private void triggerAiMove(Game game) {
+        var dto = new AiGameStateDto(game.getGameId().id().toString(), "TICTACTOE", game.getBoard().toMatrix(),
+                game.getCurrentPlayer().name(), game.getAiPlayer().name());
+        var response = aiClient.requestAiMove(dto);
+        game.makeMove(response.get("row"), response.get("col"), null); // AI heeft geen sessionId nodig in domain
+        if (game.isFinished()) publishResult(game);
+    }
 
-    public Game createNewGameWithAi(SessionId sessionId, PlayerMark human, PlayerMark ai) {
-        Game game = Game.newHvAIGame(sessionId, human, ai);
-        games.save(game);
-        return game;
+    private void publishResult(Game game) {
+        // Publish achievement events alleen voor niet-null player IDs
+        if (game.getPlayerXId() != null) {
+            messagePublisher.publishAchievementUnlock(
+                    new AchievementUnlockedMessage("EXT-TT-01", game.getPlayerXId(), game.getGameTypeId())
+            );
+        }
+        if (game.getPlayerOId() != null) {
+            messagePublisher.publishAchievementUnlock(
+                    new AchievementUnlockedMessage("EXT-TT-01", game.getPlayerOId(), game.getGameTypeId())
+            );
+        }
+
+        // Bepaal winnerSession (kan null zijn bij draw)
+        UUID winnerSession = null;
+        if (game.getWinner() == PlayerMark.X) {
+            winnerSession = game.getSessionIdX();
+        } else if (game.getWinner() == PlayerMark.O) {
+            winnerSession = game.getSessionIdO();
+        }
+
+        if (winnerSession!=null){
+            messagePublisher.publishGameResult(new TttGameResultMessage(
+                    winnerSession,
+                    game.getWinner().name(),
+                    LocalDateTime.now()
+            ));
+        }
+
     }
 
     public Game findById(GameId gameId) {
-        return games.findById(gameId).orElseThrow(() -> new IllegalArgumentException("Game with id " + gameId + " not found"));
-    }
-
-//    public Game playMove(GameId gameId, int row, int col) {
-//        Game game = findById(gameId);
-//        Game updatedGame = game.playMove(row, col);
-//        games.save(updatedGame);
-//        return game;
-//    }
-
-    public Game playMove(GameId id, int row, int col) {
-        Game game = findById(id);
-
-        Game updatedGame = game.playMove(row, col);
-
-        // 🔹 Als het spel na de human move gedaan is
-        if (updatedGame.isFinished()) {
-            games.save(updatedGame);
-            publishResultIfFinished(updatedGame);
-            return updatedGame;
-        }
-
-        // 🔹 AI aan de beurt?
-        if (updatedGame.getAiPlayer() != null &&
-                updatedGame.getCurrentPlayer() == updatedGame.getAiPlayer()) {
-
-            var dto = new AiGameStateDto(
-                    updatedGame.getGameId().id().toString(),
-                    "TICTACTOE",
-                    updatedGame.getBoard().toMatrix(),
-                    updatedGame.getCurrentPlayer().name(),
-                    updatedGame.getAiPlayer().name()
-            );
-
-            var aiResponse = aiClient.requestAiMove(dto);
-
-            int aiRow = aiResponse.get("row");
-            int aiCol = aiResponse.get("col");
-
-            Game finalUpdatedGame = updatedGame.playMove(aiRow, aiCol);
-            games.save(finalUpdatedGame);
-            publishResultIfFinished(finalUpdatedGame);
-            log.debug("AI played move at row {}, col {}", aiRow, aiCol);
-            return finalUpdatedGame;
-        }
-
-        games.save(updatedGame);
-        return updatedGame;
-    }
-
-    private void publishResultIfFinished(Game game) {
-        if (!game.isFinished()) return;
-        if (game.getSessionId() == null) return;
-
-        var message = new TttGameResultMessage(
-                game.getSessionId().id(),
-                game.getWinner() != null
-                        ? game.getWinner().name()
-                        : "DRAW",
-                LocalDateTime.now()
-        );
-
-        messagePublisher.publishGameResult(message);
+        return games.findById(gameId).orElseThrow(() -> new IllegalArgumentException("Game niet gevonden"));
     }
 }
-
-
